@@ -1,2 +1,355 @@
-# wangz
-上传图文链接
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>照片与内容上传</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        neutral: '#F3F4F6',
+                        dark: '#1F2937'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .upload-shadow {
+                box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+            }
+            .text-shadow {
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-dark text-shadow">内容上传</h1>
+            <button id="helpBtn" class="text-primary hover:text-primary/80 transition-custom">
+                <i class="fa fa-question-circle text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6 max-w-md">
+        <!-- 帮助提示框 -->
+        <div id="helpModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-white rounded-xl p-6 w-full max-w-md transform transition-custom scale-95 opacity-0" id="modalContent">
+                <h3 class="text-lg font-bold text-dark mb-3">使用帮助</h3>
+                <ul class="text-gray-600 space-y-2 text-sm">
+                    <li class="flex items-start">
+                        <i class="fa fa-camera text-primary mt-1 mr-2"></i>
+                        <span>点击上传区域可以选择或拍摄照片</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fa fa-pencil text-primary mt-1 mr-2"></i>
+                        <span>在文本框中输入您想要分享的内容</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fa fa-check-circle text-primary mt-1 mr-2"></i>
+                        <span>完成后点击提交按钮发送您的内容</span>
+                    </li>
+                </ul>
+                <button id="closeHelp" class="mt-4 w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-custom">
+                    我知道了
+                </button>
+            </div>
+        </div>
+
+        <!-- 上传表单卡片 -->
+        <div class="bg-white rounded-2xl shadow-md p-6 mb-6 transform transition-custom hover:shadow-lg">
+            <!-- 照片上传区域 -->
+            <div class="mb-6">
+                <label for="photoUpload" class="block text-gray-700 font-medium mb-2 text-sm">上传照片</label>
+                <div id="uploadArea" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center bg-neutral upload-shadow cursor-pointer hover:border-primary transition-custom">
+                    <input type="file" id="photoUpload" accept="image/*" capture="environment" class="hidden" />
+                    <i class="fa fa-camera text-4xl text-primary mb-3"></i>
+                    <p class="text-gray-500 text-sm">点击此处选择照片或拍摄</p>
+                    <p class="text-gray-400 text-xs mt-1">支持JPG、PNG格式</p>
+                </div>
+                
+                <!-- 预览区域 -->
+                <div id="previewContainer" class="mt-4 hidden">
+                    <div class="relative rounded-lg overflow-hidden">
+                        <img id="photoPreview" src="" alt="照片预览" class="w-full h-auto rounded-lg shadow-sm" />
+                        <button id="removePhoto" class="absolute top-2 right-2 bg-white/80 rounded-full p-1.5 shadow-md hover:bg-white transition-custom">
+                            <i class="fa fa-times text-gray-600"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 内容输入区域 -->
+            <div class="mb-6">
+                <label for="contentInput" class="block text-gray-700 font-medium mb-2 text-sm">输入内容</label>
+                <textarea 
+                    id="contentInput" 
+                    rows="5" 
+                    placeholder="请输入您想要分享的内容..." 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-custom resize-none"
+                ></textarea>
+                <div class="flex justify-end mt-1">
+                    <span id="charCount" class="text-gray-400 text-xs">0/500</span>
+                </div>
+            </div>
+            
+            <!-- 提交按钮 -->
+            <button 
+                id="submitBtn" 
+                class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-xl transition-custom flex items-center justify-center opacity-70 cursor-not-allowed"
+                disabled
+            >
+                <i class="fa fa-paper-plane mr-2"></i>
+                提交内容
+            </button>
+        </div>
+        
+        <!-- 历史记录区域 -->
+        <div class="mb-6">
+            <h2 class="text-lg font-bold text-dark mb-4 flex items-center">
+                <i class="fa fa-history text-primary mr-2"></i>
+                历史记录
+            </h2>
+            <div id="historyContainer" class="space-y-4 max-h-64 overflow-y-auto pr-2">
+                <!-- 历史记录将通过JavaScript动态添加 -->
+                <p class="text-gray-500 text-center text-sm py-6">暂无上传记录</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 提交成功提示 -->
+    <div id="successToast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-secondary text-white px-6 py-3 rounded-full shadow-lg flex items-center opacity-0 transition-custom pointer-events-none">
+        <i class="fa fa-check-circle mr-2"></i>
+        <span>提交成功！</span>
+    </div>
+
+    <script>
+        // DOM元素
+        const uploadArea = document.getElementById('uploadArea');
+        const photoUpload = document.getElementById('photoUpload');
+        const photoPreview = document.getElementById('photoPreview');
+        const previewContainer = document.getElementById('previewContainer');
+        const removePhoto = document.getElementById('removePhoto');
+        const contentInput = document.getElementById('contentInput');
+        const charCount = document.getElementById('charCount');
+        const submitBtn = document.getElementById('submitBtn');
+        const successToast = document.getElementById('successToast');
+        const historyContainer = document.getElementById('historyContainer');
+        const helpBtn = document.getElementById('helpBtn');
+        const helpModal = document.getElementById('helpModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeHelp = document.getElementById('closeHelp');
+        
+        // 变量
+        let selectedImage = null;
+        const MAX_CHARS = 500;
+        
+        // 初始化
+        loadHistory();
+        updateSubmitButtonState();
+        
+        // 事件监听
+        uploadArea.addEventListener('click', () => {
+            photoUpload.click();
+        });
+        
+        photoUpload.addEventListener('change', handleFileSelect);
+        
+        removePhoto.addEventListener('click', () => {
+            selectedImage = null;
+            previewContainer.classList.add('hidden');
+            photoUpload.value = '';
+            updateSubmitButtonState();
+        });
+        
+        contentInput.addEventListener('input', () => {
+            // 限制字符数
+            if (contentInput.value.length > MAX_CHARS) {
+                contentInput.value = contentInput.value.substring(0, MAX_CHARS);
+            }
+            
+            // 更新字符计数
+            charCount.textContent = `${contentInput.value.length}/${MAX_CHARS}`;
+            
+            // 更新提交按钮状态
+            updateSubmitButtonState();
+        });
+        
+        submitBtn.addEventListener('click', handleSubmit);
+        
+        helpBtn.addEventListener('click', () => {
+            helpModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        });
+        
+        closeHelp.addEventListener('click', () => {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                helpModal.classList.add('hidden');
+            }, 300);
+        });
+        
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                return;
+            }
+            
+            // 预览图片
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                selectedImage = event.target.result;
+                photoPreview.src = selectedImage;
+                previewContainer.classList.remove('hidden');
+                updateSubmitButtonState();
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 更新提交按钮状态
+        function updateSubmitButtonState() {
+            const hasContent = contentInput.value.trim().length > 0;
+            const hasImage = selectedImage !== null;
+            
+            if (hasContent || hasImage) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                submitBtn.classList.add('opacity-100', 'cursor-pointer');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                submitBtn.classList.remove('opacity-100', 'cursor-pointer');
+            }
+        }
+        
+        // 处理提交
+        function handleSubmit() {
+            const content = contentInput.value.trim();
+            
+            // 创建记录对象
+            const record = {
+                id: Date.now(),
+                timestamp: new Date().toLocaleString(),
+                image: selectedImage,
+                content: content
+            };
+            
+            // 保存记录
+            saveRecord(record);
+            
+            // 显示成功提示
+            showSuccessToast();
+            
+            // 重置表单
+            resetForm();
+        }
+        
+        // 保存记录到本地存储
+        function saveRecord(record) {
+            let history = JSON.parse(localStorage.getItem('uploadHistory') || '[]');
+            history.unshift(record); // 添加到开头
+            
+            // 限制历史记录数量
+            if (history.length > 10) {
+                history = history.slice(0, 10);
+            }
+            
+            localStorage.setItem('uploadHistory', JSON.stringify(history));
+            loadHistory();
+        }
+        
+        // 从本地存储加载历史记录
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('uploadHistory') || '[]');
+            
+            if (history.length === 0) {
+                historyContainer.innerHTML = '<p class="text-gray-500 text-center text-sm py-6">暂无上传记录</p>';
+                return;
+            }
+            
+            historyContainer.innerHTML = '';
+            
+            history.forEach(record => {
+                const recordElement = document.createElement('div');
+                recordElement.className = 'bg-white p-3 rounded-xl shadow-sm hover:shadow transition-custom';
+                
+                let imageHtml = '';
+                if (record.image) {
+                    imageHtml = `
+                        <div class="mb-2 rounded-lg overflow-hidden">
+                            <img src="${record.image}" alt="上传的图片" class="w-full h-32 object-cover" />
+                        </div>
+                    `;
+                }
+                
+                let contentHtml = '';
+                if (record.content) {
+                    contentHtml = `<p class="text-gray-600 text-sm mb-2">${record.content}</p>`;
+                }
+                
+                recordElement.innerHTML = `
+                    ${imageHtml}
+                    ${contentHtml}
+                    <p class="text-gray-400 text-xs">${record.timestamp}</p>
+                `;
+                
+                historyContainer.appendChild(recordElement);
+            });
+        }
+        
+        // 显示成功提示
+        function showSuccessToast() {
+            successToast.classList.remove('opacity-0');
+            successToast.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                successToast.classList.remove('opacity-100');
+                successToast.classList.add('opacity-0');
+            }, 2000);
+        }
+        
+        // 重置表单
+        function resetForm() {
+            selectedImage = null;
+            previewContainer.classList.add('hidden');
+            photoUpload.value = '';
+            contentInput.value = '';
+            charCount.textContent = `0/${MAX_CHARS}`;
+            updateSubmitButtonState();
+        }
+    </script>
+</body>
+</html>
+
