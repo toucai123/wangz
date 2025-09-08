@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基础资料在线上传</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36BFFA',
+                        success: '#00B42A',
+                        neutral: '#F2F3F5',
+                        dark: '#1D2129'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-height {
+                transition: max-height 0.3s ease-out;
+            }
+            .shadow-custom {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .copy-toast {
+                animation: fadein 0.5s, fadeout 0.5s 2.5s;
+            }
+            @keyframes fadein {
+                from { bottom: 0; opacity: 0; }
+                to { bottom: 30px; opacity: 1; }
+            }
+            @keyframes fadeout {
+                from { bottom: 30px; opacity: 1; }
+                to { bottom: 0; opacity: 0; }
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-dark min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-[clamp(1.25rem,3vw,1.75rem)] font-semibold text-primary flex items-center">
+                <i class="fa fa-cloud-upload mr-2"></i>
+                基础资料在线上传
+            </h1>
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="#" class="text-gray-600 hover:text-primary transition-colors">
+                    <i class="fa fa-question-circle mr-1"></i>帮助中心
+                </a>
+                <button id="contactBtn" class="text-gray-600 hover:text-primary transition-colors flex items-center">
+                    <i class="fa fa-phone mr-1"></i>联系我们
+                </button>
+            </div>
+            <!-- 移动端菜单按钮 -->
+            <button id="mobileMenuBtn" class="md:hidden text-gray-600 hover:text-primary">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div id="mobileMenu" class="md:hidden hidden bg-white border-t">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+                <a href="#" class="text-gray-600 hover:text-primary py-2 transition-colors">
+                    <i class="fa fa-question-circle mr-1"></i>帮助中心
+                </a>
+                <button id="mobileContactBtn" class="text-left text-gray-600 hover:text-primary py-2 transition-colors flex items-center">
+                    <i class="fa fa-phone mr-1"></i>联系我们
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 联系我们弹窗 -->
+    <div id="contactModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl p-6 md:p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-primary">联系方式</h3>
+                <button id="closeContactModal" class="text-gray-500 hover:text-gray-700 transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="flex items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
+                        <i class="fa fa-phone"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-sm text-gray-500">联系电话</p>
+                        <p class="font-medium">138-1234-5678</p>
+                    </div>
+                    <button class="copy-btn text-gray-400 hover:text-primary transition-colors" data-text="13812345678">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
+                        <i class="fa fa-envelope"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-sm text-gray-500">电子邮箱</p>
+                        <p class="font-medium">contact@example.com</p>
+                    </div>
+                    <button class="copy-btn text-gray-400 hover:text-primary transition-colors" data-text="contact@example.com">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
+                        <i class="fa fa-qq"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-sm text-gray-500">QQ号码</p>
+                        <p class="font-medium">123456789</p>
+                    </div>
+                    <button class="copy-btn text-gray-400 hover:text-primary transition-colors" data-text="123456789">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+                
+                <div class="flex items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-4">
+                        <i class="fa fa-weixin"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <p class="text-sm text-gray-500">微信好友</p>
+                        <p class="font-medium">wxid_1234567890</p>
+                    </div>
+                    <button class="copy-btn text-gray-400 hover:text-primary transition-colors" data-text="wxid_1234567890">
+                        <i class="fa fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 复制成功提示 -->
+    <div id="copyToast" class="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-dark text-white px-4 py-2 rounded-lg shadow-lg opacity-0 pointer-events-none copy-toast hidden">
+        复制成功！
+    </div>
+
+    <!-- 主内容区 -->
+    <main class="flex-grow container mx-auto px-4 py-8 md:py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧：使用帮助 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-custom p-6 h-full transform hover:translate-y-[-5px] transition-all duration-300">
+                    <h2 class="text-xl font-bold mb-4 text-primary flex items-center">
+                        <i class="fa fa-book mr-2"></i>使用帮助
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">操作步骤</h3>
+                            <ul class="space-y-3 pl-5">
+                                <li class="flex items-start">
+                                    <span class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5">1</span>
+                                    <span>点击上传区域选择或拍摄照片</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5">2</span>
+                                    <span>在文本框中输入需分享的内容</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 flex-shrink-0 mt-0.5">3</span>
+                                    <span>完成后点击提交按钮发送内容</span>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">上传照片相关</h3>
+                            <ul class="space-y-2 pl-5 list-disc text-gray-700">
+                                <li>触发方式：点击"点击此处选择照片或拍摄"区域</li>
+                                <li>支持格式：JPG、PNG</li>
+                                <li>提供照片预览功能</li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-semibold text-lg mb-2">输入内容相关</h3>
+                            <ul class="space-y-2 pl-5 list-disc text-gray-700">
+                                <li>包含姓名、电话、年龄、平台链接等信息</li>
+                                <li>需简单陈述参与过程</li>
+                                <li>字数限制：最多500字</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：上传表单 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-custom p-6 md:p-8 transform hover:translate-y-[-5px] transition-all duration-300">
+                    <h2 class="text-xl font-bold mb-6 text-primary flex items-center">
+                        <i class="fa fa-pencil-square-o mr-2"></i>资料上传表单
+                    </h2>
+                    
+                    <form id="uploadForm" class="space-y-6">
+                        <!-- 照片上传区域 -->
+                        <div class="mb-8">
+                            <label class="block text-gray-700 font-medium mb-3">上传照片</label>
+                            
+                            <div id="uploadArea" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors duration-300 bg-neutral/50">
+                                <input type="file" id="photoUpload" accept="image/jpeg, image/png" class="hidden" capture="environment">
+                                
+                                <div id="uploadPlaceholder" class="space-y-3">
+                                    <i class="fa fa-camera text-5xl text-gray-400"></i>
+                                    <p class="text-gray-600">点击此处选择照片或拍摄</p>
+                                    <p class="text-sm text-gray-500">支持JPG、PNG格式</p>
+                                </div>
+                                
+                                <div id="previewContainer" class="hidden">
+                                    <img id="photoPreview" src="" alt="照片预览" class="max-w-full max-h-64 mx-auto rounded-md shadow-sm">
+                                    <button type="button" id="removePhoto" class="mt-3 text-red-500 hover:text-red-700 transition-colors">
+                                        <i class="fa fa-times mr-1"></i>移除照片
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 表单字段 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label for="name" class="block text-gray-700 font-medium mb-2">姓名 <span class="text-red-500">*</span></label>
+                                <input type="text" id="name" name="name" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                            </div>
+                            
+                            <div>
+                                <label for="phone" class="block text-gray-700 font-medium mb-2">电话 <span class="text-red-500">*</span></label>
+                                <input type="tel" id="phone" name="phone" required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                            </div>
+                            
+                            <div>
+                                <label for="age" class="block text-gray-700 font-medium mb-2">年龄</label>
+                                <input type="number" id="age" name="age" min="0" max="150"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                            </div>
+                            
+                            <div>
+                                <label for="platformLink" class="block text-gray-700 font-medium mb-2">平台链接</label>
+                                <input type="url" id="platformLink" name="platformLink"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                            </div>
+                        </div>
+                        
+                        <!-- 接收邮箱（隐藏域，实际应用中可改为可配置项） -->
+                        <input type="hidden" id="recipientEmail" value="recipient@example.com">
+                        
+                        <!-- 参与过程陈述 -->
+                        <div>
+                            <label for="description" class="block text-gray-700 font-medium mb-2">引言：简单陈述参与过程 <span class="text-red-500">*</span></label>
+                            <textarea id="description" name="description" rows="4" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all resize-none"
+                                maxlength="500"></textarea>
+                            <div class="flex justify-end mt-1">
+                                <span id="charCount" class="text-sm text-gray-500">0/500</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 提交按钮 -->
+                        <div class="pt-2">
+                            <button type="submit" id="submitBtn" 
+                                class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-8 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 flex items-center">
+                                <i class="fa fa-paper-plane mr-2"></i>提交内容
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 成功提示弹窗 -->
+    <div id="successModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/20 text-success mb-4">
+                    <i class="fa fa-check text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2">提交成功！</h3>
+                <p class="text-gray-600 mb-6">您的资料已成功发送到指定邮箱，感谢您的提交。</p>
+                <button id="closeModal" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    确定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 错误提示弹窗 -->
+    <div id="errorModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 transform scale-95 transition-transform duration-300">
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+                    <i class="fa fa-times text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold mb-2 text-red-500">提交失败</h3>
+                <p id="errorMessage" class="text-gray-600 mb-6">发送过程中出现错误，请稍后重试。</p>
+                <button id="closeErrorModal" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-6 rounded-lg transition-colors">
+                    确定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-white border-t border-gray-200 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© 2023 基础资料在线上传系统 - 保留所有权利</p>
+        </div>
+    </footer>
+
+    <script>
+        // 获取DOM元素
+        const uploadArea = document.getElementById('uploadArea');
+        const photoUpload = document.getElementById('photoUpload');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const previewContainer = document.getElementById('previewContainer');
+        const photoPreview = document.getElementById('photoPreview');
+        const removePhoto = document.getElementById('removePhoto');
+        const description = document.getElementById('description');
+        const charCount = document.getElementById('charCount');
+        const uploadForm = document.getElementById('uploadForm');
+        const successModal = document.getElementById('successModal');
+        const errorModal = document.getElementById('errorModal');
+        const errorMessage = document.getElementById('errorMessage');
+        const closeModal = document.getElementById('closeModal');
+        const closeErrorModal = document.getElementById('closeErrorModal');
+        const contactBtn = document.getElementById('contactBtn');
+        const mobileContactBtn = document.getElementById('mobileContactBtn');
+        const contactModal = document.getElementById('contactModal');
+        const closeContactModal = document.getElementById('closeContactModal');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const copyBtns = document.querySelectorAll('.copy-btn');
+        const copyToast = document.getElementById('copyToast');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // 照片上传区域点击事件
+        uploadArea.addEventListener('click', () => {
+            photoUpload.click();
+        });
+        
+        // 照片选择事件
+        photoUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // 检查文件类型
+                if (!file.type.match('image/jpeg') && !file.type.match('image/png')) {
+                    alert('请上传JPG或PNG格式的图片');
+                    return;
+                }
+                
+                // 预览图片
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    photoPreview.src = event.target.result;
+                    uploadPlaceholder.classList.add('hidden');
+                    previewContainer.classList.remove('hidden');
+                    
+                    // 添加淡入动画
+                    photoPreview.classList.add('opacity-0');
+                    setTimeout(() => {
+                        photoPreview.classList.remove('opacity-0');
+                        photoPreview.classList.add('transition-opacity', 'duration-500', 'opacity-100');
+                    }, 10);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // 移除照片
+        removePhoto.addEventListener('click', () => {
+            photoUpload.value = '';
+            previewContainer.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+        });
+        
+        // 字数统计
+        description.addEventListener('input', () => {
+            const count = description.value.length;
+            charCount.textContent = `${count}/500`;
+            
+            // 当接近上限时改变颜色提醒用户
+            if (count > 450) {
+                charCount.classList.add('text-orange-500');
+            } else {
+                charCount.classList.remove('text-orange-500');
+            }
+            
+            if (count === 500) {
+                charCount.classList.remove('text-orange-500');
+                charCount.classList.add('text-red-500');
+            } else {
+                charCount.classList.remove('text-red-500');
+            }
+        });
+        
+        // 表单提交
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // 简单验证
+            if (!photoUpload.files.length) {
+                alert('请上传照片');
+                return;
+            }
+            
+            if (!description.value.trim()) {
+                alert('请填写参与过程描述');
+                description.focus();
+                return;
+            }
+            
+            // 禁用提交按钮，防止重复提交
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>提交中...';
+            
+            try {
+                // 创建FormData对象
+                const formData = new FormData();
+                formData.append('photo', photoUpload.files[0]);
+                formData.append('name', document.getElementById('name').value);
+                formData.append('phone', document.getElementById('phone').value);
+                formData.append('age', document.getElementById('age').value);
+                formData.append('platformLink', document.getElementById('platformLink').value);
+                formData.append('description', description.value);
+                formData.append('recipientEmail', document.getElementById('recipientEmail').value);
+                
+                // 发送数据到服务器（这里使用模拟API，实际应用中替换为真实API）
+                // 注意：实际应用中需要后端服务来处理文件并发送邮件
+                const response = await axios.post('https://api.example.com/upload-and-send-email', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+                
+                if (response.data.success) {
+                    // 显示成功弹窗
+                    showSuccessModal();
+                } else {
+                    throw new Error(response.data.message || '提交失败，请重试');
+                }
+            } catch (error) {
+                console.error('提交失败:', error);
+                // 显示错误弹窗
+                showErrorModal(error.message || '发送过程中出现错误，请稍后重试');
+            } finally {
+                // 恢复提交按钮状态
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane mr-2"></i>提交内容';
+            }
+        });
+        
+        // 显示成功弹窗
+        function showSuccessModal() {
+            successModal.classList.remove('hidden');
+            // 触发动画
+            setTimeout(() => {
+                successModal.classList.add('opacity-100');
+                successModal.querySelector('div').classList.remove('scale-95');
+                successModal.querySelector('div').classList.add('scale-100');
+            }, 10);
+            
+            // 重置表单
+            uploadForm.reset();
+            photoUpload.value = '';
+            previewContainer.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+            charCount.textContent = '0/500';
+        }
+        
+        // 显示错误弹窗
+        function showErrorModal(message) {
+            errorMessage.textContent = message;
+            errorModal.classList.remove('hidden');
+            // 触发动画
+            setTimeout(() => {
+                errorModal.classList.add('opacity-100');
+                errorModal.querySelector('div').classList.remove('scale-95');
+                errorModal.querySelector('div').classList.add('scale-100');
+            }, 10);
+        }
+        
+        // 关闭成功弹窗
+        closeModal.addEventListener('click', () => {
+            successModal.classList.remove('opacity-100');
+            successModal.querySelector('div').classList.remove('scale-100');
+            successModal.querySelector('div').classList.add('scale-95');
+            
+            setTimeout(() => {
+                successModal.classList.add('hidden');
+            }, 300);
+        });
+        
+        // 关闭错误弹窗
+        closeErrorModal.addEventListener('click', () => {
+            errorModal.classList.remove('opacity-100');
+            errorModal.querySelector('div').classList.remove('scale-100');
+            errorModal.querySelector('div').classList.add('scale-95');
+            
+            setTimeout(() => {
+                errorModal.classList.add('hidden');
+            }, 300);
+        });
+        
+        // 打开联系我们弹窗
+        function openContactModal() {
+            contactModal.classList.remove('hidden');
+            // 触发动画
+            setTimeout(() => {
+                contactModal.classList.add('opacity-100');
+                contactModal.querySelector('div').classList.remove('scale-95');
+                contactModal.querySelector('div').classList.add('scale-100');
+            }, 10);
+            
+            // 关闭移动菜单（如果打开）
+            mobileMenu.classList.add('hidden');
+        }
+        
+        // 关闭联系我们弹窗
+        closeContactModal.addEventListener('click', () => {
+            contactModal.classList.remove('opacity-100');
+            contactModal.querySelector('div').classList.remove('scale-100');
+            contactModal.querySelector('div').classList.add('scale-95');
+            
+            setTimeout(() => {
+                contactModal.classList.add('hidden');
+            }, 300);
+        });
+        
+        // 点击弹窗外部关闭
+        [successModal, errorModal, contactModal].forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    if (modal === successModal) closeModal.click();
+                    if (modal === errorModal) closeErrorModal.click();
+                    if (modal === contactModal) closeContactModal.click();
+                }
+            });
+        });
+        
+        // 移动端菜单切换
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // 联系我们按钮点击事件
+        contactBtn.addEventListener('click', openContactModal);
+        mobileContactBtn.addEventListener('click', openContactModal);
+        
+        // 复制功能
+        copyBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const textToCopy = btn.getAttribute('data-text');
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    // 显示复制成功提示
+                    copyToast.classList.remove('hidden');
+                    setTimeout(() => {
+                        copyToast.classList.add('hidden');
+                    }, 3000);
+                }).catch(err => {
+                    console.error('无法复制文本: ', err);
+                    alert('复制失败，请手动复制');
+                });
+            });
+        });
+        
+        // 滚动时导航栏效果
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 10) {
+                header.classList.add('py-2', 'shadow');
+                header.classList.remove('py-4', 'shadow-sm');
+            } else {
+                header.classList.add('py-4', 'shadow-sm');
+                header.classList.remove('py-2', 'shadow');
+            }
+        });
+    </script>
+</body>
+</html>
+    
